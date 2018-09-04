@@ -13,9 +13,9 @@ config = {}
 
 if os.environ.get('API_URL') is not None:
 	config['API_URL'] = os.environ.get('API_URL')
-	req = requests.get(config['API_URL']+"/status/name").json()
+	req = requests.get(config['API_URL']+"/status/config/name").json()
 	config['DATA_NAME'] = os.environ.get('DATA_NAME', req['result'])
-	req = requests.get(config['API_URL']+"/status/timezone", timeout=10).json()
+	req = requests.get(config['API_URL']+"/status/config/timezone", timeout=10).json()
 	config['TIMEZONE'] = os.environ.get('TIMEZONE', req['result'])
 	config['PATH_PB'] = os.environ.get('PATH_PB', PB_INPUT_DIR)
 	config['PATH_TAR'] = os.environ.get('PATH_TAR', TAR_OUTPUT_DIR)
@@ -30,7 +30,7 @@ tz = pytz.timezone(config['TIMEZONE'])
 def notify(text):
 	if os.environ.get('API_URL') is not None:
 		payload = { 'header':{ 'timestamp' : int(dt.datetime.now(tz).timestamp()), 'tool' :'task-archive'}, 'data': text }
-		r = requests.post(os.environ.get('API_URL')+"/status/log", json=payload)
+		r = requests.post(os.environ.get('API_URL')+"/status/log/insert", json=payload)
 	print(text)
 
 notify("Archive Task Started")
