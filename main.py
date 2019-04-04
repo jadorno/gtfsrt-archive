@@ -73,8 +73,7 @@ for filename, files in sorted(out_arrays.items()):
 					print("Removed "+file)
 		else:
 			notify(output_file+" already exists. This shouldn't be happening.")
-		#	print(files)
-		#	exit()
+			exit()
 	else:
 		print(filename+".tar.gz not generated. Week ongoing.")
 
