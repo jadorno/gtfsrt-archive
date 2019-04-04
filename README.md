@@ -13,7 +13,7 @@ The program can be run independently from other services or dependent on the Dat
 ### Program Execution (API Dependent)
 
 ```
-docker run --rm --network=my_network -e "API_URL=http://basic_api" -e "DATASET=hart" -v /transi/data/pb/hart:/usr/src/app/pb -v /transi/data/tar/hart:/usr/src/app/tar transit_pb_archive
+docker run --rm --network=my_network -e "API_URL=http://basic_api" -e "DATASET=hart" -v /transi/data/pb/hart:/usr/src/app/pb -v /transi/data/tar/hart:/usr/src/app/tar registry.gitlab.com/cutr-at-usf/transi/core/archive-pb
 ```
 
 ### Execution Parameters
@@ -29,7 +29,7 @@ docker run --rm --network=my_network -e "API_URL=http://basic_api" -e "DATASET=h
 ### Program Execution (Independent Runtime)
 
 ```
-docker run --rm --network=my_network -e "DATA_NAME=HART" -e "TIMEZONE=America/New_York" -v /transi/data/pb/hart:/usr/src/app/pb -v /transi/data/tar/hart:/usr/src/app/tar transit_pb_archive
+docker run --rm --network=my_network -e "DATA_NAME=HART" -e "TIMEZONE=America/New_York" -v /transi/data/pb/hart:/usr/src/app/pb -v /transi/data/tar/hart:/usr/src/app/tar registry.gitlab.com/cutr-at-usf/transi/core/archive-pb
 ```
 
 ### Execution Parameters
