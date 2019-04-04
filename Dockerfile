@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY compress.py ./
 
-CMD [ "python", "-u", "./compress.py"]
+CMD [ "python", "-u", "./main.py"]

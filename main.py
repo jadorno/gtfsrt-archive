@@ -13,9 +13,12 @@ config = {}
 
 if os.environ.get('API_URL') is not None:
 	config['API_URL'] = os.environ.get('API_URL')
-	req = requests.get(config['API_URL']+"/status/config/name").json()
+
+	parameters = {'source':os.environ.get('DATASET')}
+
+	req = requests.get(config['API_URL']+"/status/config/name", params=parameters, timeout=10).json()
 	config['DATA_NAME'] = os.environ.get('DATA_NAME', req['result'])
-	req = requests.get(config['API_URL']+"/status/config/timezone", timeout=10).json()
+	req = requests.get(config['API_URL']+"/status/config/timezone", params=parameters, timeout=10).json()
 	config['TIMEZONE'] = os.environ.get('TIMEZONE', req['result'])
 	config['PATH_PB'] = os.environ.get('PATH_PB', PB_INPUT_DIR)
 	config['PATH_TAR'] = os.environ.get('PATH_TAR', TAR_OUTPUT_DIR)
@@ -28,12 +31,13 @@ else:
 tz = pytz.timezone(config['TIMEZONE'])
 
 def notify(text):
-	if os.environ.get('API_URL') is not None:
-		payload = { 'header':{ 'timestamp' : int(dt.datetime.now(tz).timestamp()), 'tool' :'task-archive'}, 'data': text }
-		r = requests.post(os.environ.get('API_URL')+"/status/log/insert", json=payload)
+#	if os.environ.get('API_URL') is not None:
+#		payload = { 'header':{ 'timestamp' : int(dt.datetime.now(tz).timestamp()), 'tool' :'task-archive'}, 'data': text }
+#		parameters = {'source':os.environ.get('DATASET')}
+#		r = requests.post(os.environ.get('API_URL')+"/status/log/insert", params=parameters, json=payload)
 	print(text)
 
-notify("Archive Task Started")
+notify("Archive Task Started for "+config['DATA_NAME'])
 
 out_arrays = {}
 
@@ -42,14 +46,14 @@ for file in os.listdir(config['PATH_PB']):
 
 		timestamp = dt.datetime.fromtimestamp(float(file.split("_")[0]), tz)
 
-		out_file_name = config['DATA_NAME']+"-"+timestamp.strftime("%Y-Week-%V")
+		out_file_name = config['DATA_NAME']+"-"+timestamp.strftime("%G-Week-%V")
 		try:
 			out_arrays[out_file_name].append(os.path.join(config['PATH_PB'], file))
 		except KeyError:
 			out_arrays[out_file_name] = []
 			out_arrays[out_file_name].append(os.path.join(config['PATH_PB'], file))
 
-exclude_week = config['DATA_NAME']+"-"+dt.datetime.now(tz).strftime("%Y-Week-%V")
+exclude_week = config['DATA_NAME']+"-"+dt.datetime.now(tz).strftime("%G-Week-%V")
 
 for filename, files in sorted(out_arrays.items()):
 	
@@ -69,7 +73,8 @@ for filename, files in sorted(out_arrays.items()):
 					print("Removed "+file)
 		else:
 			notify(output_file+" already exists. This shouldn't be happening.")
-			exit()
+		#	print(files)
+		#	exit()
 	else:
 		print(filename+".tar.gz not generated. Week ongoing.")
 
