@@ -4,6 +4,10 @@
 
 	Batch Job
 
+### Execution Frequency:
+
+	Weekly
+
 ### Program Description
 
 This job creates weekly tar.gz archives from a directory of .pb files. Current week is excluded from this operation.
@@ -18,7 +22,7 @@ docker run --rm --network=my_network -e "API_URL=http://basic_api" -e "DATASET=h
 
 ### Execution Parameters
 
-**API_URL**: URL used to access the Data API Service on docket network
+**API_URL**: URL used to access the Data API Service on docker network
 
 **DATASET**: Dataset configuration name as specified in config.json for the Data API service
 
