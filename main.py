@@ -2,11 +2,9 @@ from pathlib import Path
 import datetime as dt
 from tqdm import tqdm
 import subprocess
-import requests
 import zipfile
 import shutil
 import pytz
-import os
 import json
 
 
