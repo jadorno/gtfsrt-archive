@@ -1,80 +1,91 @@
+from pathlib import Path
 import datetime as dt
+from tqdm import tqdm
+import subprocess
 import requests
-import tarfile
+import zipfile
+import shutil
 import pytz
-import sys
 import os
+import json
 
-PB_INPUT_DIR = "pb"
-TAR_OUTPUT_DIR = "tar"
-delete_after_compress = True
 
-config = {}
+data_path = Path('/usr/src/data')
 
-if os.environ.get('API_URL') is not None:
-	config['API_URL'] = os.environ.get('API_URL')
+config = None
+with open(data_path.joinpath('dataset.json')) as json_file:
+    config = json.load(json_file)
+tz = pytz.timezone(config['timezone'])
 
-	parameters = {'source':os.environ.get('DATASET')}
+print("Job Started")
 
-	req = requests.get(config['API_URL']+"/status/config/name", params=parameters, timeout=10).json()
-	config['DATA_NAME'] = os.environ.get('DATA_NAME', req['result'])
-	req = requests.get(config['API_URL']+"/status/config/timezone", params=parameters, timeout=10).json()
-	config['TIMEZONE'] = os.environ.get('TIMEZONE', req['result'])
-	config['PATH_PB'] = os.environ.get('PATH_PB', PB_INPUT_DIR)
-	config['PATH_TAR'] = os.environ.get('PATH_TAR', TAR_OUTPUT_DIR)
-else:
-	config['DATA_NAME'] = os.environ.get('DATA_NAME')
-	config['TIMEZONE'] = os.environ.get('TIMEZONE')
-	config['PATH_PB'] = os.environ.get('PATH_PB', PB_INPUT_DIR)
-	config['PATH_TAR'] = os.environ.get('PATH_TAR', TAR_OUTPUT_DIR)
+exclude_week = config['data_name']+"-GTFSRT-"+dt.datetime.now(tz).strftime("%G-%V")
+gtfsrt_path = data_path.joinpath('gtfsrt')
+json_path = data_path.joinpath('gtfsrt-json')
 
-tz = pytz.timezone(config['TIMEZONE'])
+for item in gtfsrt_path.iterdir():
+	print(item)
+	if item.is_dir() and ''.join(item.suffixes) in ['.pb'] and item.stem != exclude_week:
 
-def notify(text):
-#	if os.environ.get('API_URL') is not None:
-#		payload = { 'header':{ 'timestamp' : int(dt.datetime.now(tz).timestamp()), 'tool' :'task-archive'}, 'data': text }
-#		parameters = {'source':os.environ.get('DATASET')}
-#		r = requests.post(os.environ.get('API_URL')+"/status/log/insert", params=parameters, json=payload)
-	print(text)
+		destination = item.with_suffix('.pb.zip')
+		print('Creating', destination.name)
+		p = subprocess.run(['7z','a','-tzip', destination, item,'-mx7'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, check=True)
 
-notify("Archive Task Started for "+config['DATA_NAME'])
+		zip_ok = True
+		zip = zipfile.ZipFile(destination, 'r')
+		with tqdm(total=len(zip.namelist())) as pbar:
+			for feed in item.iterdir():
+				if feed.is_dir():
+					for feed_item in feed.iterdir():
 
-out_arrays = {}
-
-for file in os.listdir(config['PATH_PB']):
-	if file.endswith(".pb") or file.endswith(".proto"):
-
-		timestamp = dt.datetime.fromtimestamp(float(file.split("_")[0]), tz)
-
-		out_file_name = config['DATA_NAME']+"-"+timestamp.strftime("%G-Week-%V")
-		try:
-			out_arrays[out_file_name].append(os.path.join(config['PATH_PB'], file))
-		except KeyError:
-			out_arrays[out_file_name] = []
-			out_arrays[out_file_name].append(os.path.join(config['PATH_PB'], file))
-
-exclude_week = config['DATA_NAME']+"-"+dt.datetime.now(tz).strftime("%G-Week-%V")
-
-for filename, files in sorted(out_arrays.items()):
-	
-	if filename != exclude_week:
-		print(filename+" "+str(len(files))+" files")
-
-		output_file = os.path.join(config['PATH_TAR'], filename+".tar.gz")
-		notify("Creating: "+output_file)
-
-		if not os.path.isfile(output_file):
-			with tarfile.open(os.path.join(config['PATH_TAR'], filename+".tar.gz"), "w:gz") as tar:
-				for file in files:
-					tar.add(file)
-			if delete_after_compress:
-				for file in files:
-					os.remove(file)
-					print("Removed "+file)
+						with open(feed_item, mode='rb') as uncompressed:
+							compressed_path = feed_item.relative_to(gtfsrt_path)
+							with zip.open(str(compressed_path)) as compressed:
+								if uncompressed.read() != compressed.read():
+									zip_ok = False
+									break
+								else:
+									pbar.update()
+		zip.close()
+		if zip_ok:
+			print('Zip Verified. Removing Directory.')
+			shutil.rmtree(item)
 		else:
-			notify(output_file+" already exists. This shouldn't be happening.")
+			print('Zip Mismatch')
+			print(p.stdout)
 			exit()
-	else:
-		print(filename+".tar.gz not generated. Week ongoing.")
 
-notify("Archive Task Finished")
+for item in json_path.iterdir():
+	print(item)
+	if item.is_dir() and ''.join(item.suffixes) in ['.json'] and item.stem != exclude_week:
+
+		destination = item.with_suffix('.json.zip')
+		print('Creating', destination.name)
+		p = subprocess.run(['7z','a','-tzip', destination, item,'-mx7'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, check=True)
+
+		zip_ok = True
+		zip = zipfile.ZipFile(destination, 'r')
+		with tqdm(total=len(zip.namelist())) as pbar:
+			for feed in item.iterdir():
+				if feed.is_dir():
+					for feed_item in feed.iterdir():
+
+						with open(feed_item, mode='rb') as uncompressed:
+							compressed_path = feed_item.relative_to(json_path)
+							with zip.open(str(compressed_path)) as compressed:
+								if uncompressed.read() != compressed.read():
+									zip_ok = False
+									break
+								else:
+									pbar.update()
+		zip.close()
+		if zip_ok:
+			print('Zip Verified. Removing Directory.')
+			shutil.rmtree(item)
+		else:
+			print('Zip Mismatch')
+			print(p.stdout)
+			exit()
+
+
+print("Job Finished")
