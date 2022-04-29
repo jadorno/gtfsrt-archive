@@ -1,2 +1,5 @@
 Dockerfile.devel
 Dockerfile.local
+
+.DS_Store
+._*
