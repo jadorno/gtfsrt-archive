@@ -6,9 +6,12 @@ import zipfile
 import shutil
 import pytz
 import json
+import sys
 
+data_path_str = sys.argv[1] if len(sys.argv) > 1 else '/usr/src/data'
+data_path = Path(data_path_str)
 
-data_path = Path('/usr/src/data')
+print("Data Path:",str(data_path))
 
 config = None
 with open(data_path.joinpath('dataset.json')) as json_file:
